@@ -1,6 +1,6 @@
 {
   "name": "curlydiff",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "diff nested JavaScript objects",
   "main": "index.js",
   "scripts": {
