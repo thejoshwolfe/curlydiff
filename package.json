@@ -10,12 +10,12 @@
     "type": "git",
     "url": "git://github.com/thejoshwolfe/curlydiff.git"
   },
-  "keywords": [
-    "diff"
-  ],
   "author": "Josh Wolfe <thejoshwolfe@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/thejoshwolfe/curlydiff/issues"
+  },
+  "devDependencies": {
+    "whynoteq": "~1.0.1"
   }
 }
