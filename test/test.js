@@ -25,6 +25,13 @@ test({a:1, b:{c:2, d:3}}, {a:1, b:{c:2, d:3, e:4}});
 test({a:1, b:{c:2, d:3}}, {a:1, b:{c:2, d:4}});
 test({a:1, b:{c:2, d:3}}, {a:2, b:{c:2, d:3}});
 
+console.log("\nsubtree manipulation:");
+test({a:1}, {a:1, b:{c:2, d:3}});
+test({a:1, b:{c:2, d:3}}, {a:1});
+test({a:1, b:1}, {a:1, b:{}});
+test(1, {a:1});
+test({a:1}, 1);
+
 function test(o1, o2) {
   var patch = curlydiff.diff(o1, o2);
   var patched = curlydiff.apply(deepCopy(o1), patch);

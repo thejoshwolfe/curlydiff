@@ -10,7 +10,7 @@ function diff(from, to) {
     var toChild = to[key];
     if (fromChild === toChild) return;
     var childDiff = diff(fromChild, toChild);
-    if (isObject(childDiff) && Object.keys(childDiff).length === 0) return;
+    if (isObject(fromChild) && isObject(childDiff) && Object.keys(childDiff).length === 0) return;
     // there's a difference
     result[key] = childDiff;
   });
