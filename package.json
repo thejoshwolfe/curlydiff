@@ -16,6 +16,6 @@
     "url": "https://github.com/thejoshwolfe/curlydiff/issues"
   },
   "devDependencies": {
-    "whynoteq": "~1.0.1"
+    "whynoteq": "~1.0.2"
   }
 }
