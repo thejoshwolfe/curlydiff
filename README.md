@@ -23,7 +23,7 @@ See below for formal description of the patch format.)
 ```js
 var curlydiff = require(curlydiff);
 
-curlydiff.diff({a:1}, {a:1});      // {}
+curlydiff.diff({a:1}, {a:1});      // undefined
 curlydiff.diff({a:1}, {a:2});      // {a:2}
 curlydiff.diff({a:1}, {a:1, b:2}); // {b:2}
 curlydiff.diff({a:1, b:2}, {a:1}); // {b:null}
@@ -31,6 +31,9 @@ curlydiff.diff({a:1, b:2}, {a:1}); // {b:null}
 curlydiff.diff({a:1, b:{}}, {a:1, b:{c:2}});    // {b:{c:2}}
 curlydiff.diff({a:1, b:{c:2}}, {a:1, b:{}});    // {b:{c:null}}
 curlydiff.diff({a:1, b:{c:2}}, {a:2, b:{c:2}}); // {a:2}
+
+curlydiff.diff("hello", "hello"); // undefined
+curlydiff.diff("hello", "world"); // "world"
 
 // this object will be modified in place
 var data = {};
@@ -49,25 +52,30 @@ Returns a diff from `from` to `to`.
 Assuming both `from` and `to` are JSON-safe (see below), and neither contain `null` anywhere in their structure,
 Then calling `apply(from, diff(from, to))` will result in `from` being JSON-equal (see below) to `to`.
 
-Assuming `from` and `to` are JSON-safe, the return value of this function will also be JSON-safe.
-This function often returns a `{...}` object.
-However, if `from` and `to` are not `{...}` objects, then curlydiff cannot perform any kind of meaningful diff,
+Assuming `from` and `to` are JSON-safe,
+the return value of this function will either be `undefined` or be JSON-safe.
+A return value of `undefined` indicates that `from` and `to` are already JSON-equal.
+Otherwise, this function often returns a `{...}` object.
+However, if `from` and `to` are not `{...}` objects,
+then curlydiff cannot perform any kind of meaningful diff,
 and `to` is returned regardless of its type.
-Note that `apply()` will still return a meaningful value in this case.
+(Note that `apply()` will still return a meaningful value in this case.)
 
 ### apply(object, patch)
 
 Applies `patch` to `object` in-place, and returns `object`.
 Assuming `patch` is a value that was returned from `diff(object, to)`,
 the returned value will be JSON-equal (see below) to the original `to`.
-Also assuming `object` and the original `to` are `{...}` objects,
+If `patch` is `undefined`, then `object` is returned unaltered.
+Otherwise, assuming `object` and the original `to` are `{...}` objects,
 `object` will be modified in-place, and will then be JSON-equal to the original `to`.
 
 All of this assumes `object` and `to` are JSON-safe (see below).
 
 ## Patch Format
 
-Patches produced by this library will be JSON-safe (see below) assuming the inputs to this library are JSON-safe.
+A patch that is `undefined`, indicates no change.
+Otherwise, patches will be JSON-safe (see below) assuming the inputs to this library are JSON-safe.
 See the Usage section above for examples.
 
 Patches are usually `{...}` objects, which represent the changes between the two objects.
