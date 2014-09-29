@@ -45,7 +45,7 @@ function apply(object, patch) {
 function isObject(object) {
   if (object == null) return false;
   if (typeof object !== "object") return false;
-  if (object.constructor === Array) return false;
+  if (Array.isArray(object)) return false;
   return true;
 }
 
