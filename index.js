@@ -1,18 +1,26 @@
 module.exports.diff = diff;
 module.exports.apply = apply;
+module.exports.isObject = isObject;
 
 function diff(from, to) {
   if (!isObject(from) || !isObject(to)) {
     // not both objects
-    if (from !== to) return cannonicalize(to);
-    // no change
-    return undefined;
+    if (from === to) return undefined;
+    if (from instanceof Date && to instanceof Date && from.getTime() === to.getTime()) return undefined;
+    // there's a difference
+    return to;
   }
   // both are objects
   var result = {};
   Object.keys(from).forEach(function(key) {
-    var childDiff = diff(from[key], to[key]);
-    if (childDiff === undefined) return;
+    var childDiff;
+    if (key in to) {
+      childDiff = diff(from[key], to[key]);
+      if (childDiff === undefined) return;
+    } else {
+      // deleted
+      childDiff = null;
+    }
     // there's a difference
     result[key] = childDiff;
   });
@@ -46,11 +54,6 @@ function isObject(object) {
   if (object == null) return false;
   if (typeof object !== "object") return false;
   if (Array.isArray(object)) return false;
+  if (object instanceof Date) return false;
   return true;
-}
-
-function cannonicalize(value) {
-  // convert undefined to null
-  if (value == null) return null;
-  return value;
 }

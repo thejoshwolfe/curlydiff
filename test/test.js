@@ -12,6 +12,10 @@ test(1, "string", "string");
 console.log("\narrays are primitives:");
 test(["a", "b"], ["a", "b", "c"], ["a", "b", "c"]);
 
+console.log("\ndates are first class citizens:");
+test(new Date(1234), new Date(1234), undefined);
+test(new Date(1234), new Date(5678), new Date(5678));
+
 console.log("\nsimple objects:");
 test({a:1, b:2}, {a:1, b:2},      undefined);
 test({a:1, b:2}, {a:1},           {b:null});
@@ -41,5 +45,10 @@ function test(o1, o2, expectedPatch) {
 }
 
 function deepCopy(object) {
-  return JSON.parse(JSON.stringify(object));
+  if (!curlydiff.isObject(object)) return object;
+  var result = {};
+  for (var key in object) {
+    result[key] = deepCopy(object[key]);
+  }
+  return result;
 }

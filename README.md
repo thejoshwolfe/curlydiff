@@ -18,6 +18,10 @@ The value `null` has special meaning in curlydiff, and so it should probably be 
 (`null` corresponds to the deletion of a property.
 See below for formal description of the patch format.)
 
+If curlydiff is given an object that contains itself, such as `var x = {}; x.self = x;`,
+then curlydiff's behavior is undefined.
+(It will probably cause a "Maximum call stack size exceeded" error.)
+
 ## Usage
 
 ```js
@@ -35,6 +39,8 @@ curlydiff.diff({a:1, b:{c:2}}, {a:2, b:{c:2}}); // {a:2}
 curlydiff.diff("hello", "hello"); // undefined
 curlydiff.diff("hello", "world"); // "world"
 
+curlydiff.diff(new Date(1234), new Date(1234)); // undefined
+
 // this object will be modified in place
 var data = {};
 curlydiff.apply(data, {a:1});             // {a:1}
@@ -49,74 +55,65 @@ curlydiff.apply(data, {b:null, d:{e:4}}); // {a:1, d:{e:4}}
 ### diff(from, to)
 
 Returns a diff from `from` to `to`.
-Assuming both `from` and `to` are JSON-safe (see below), and neither contain `null` anywhere in their structure,
-Then calling `apply(from, diff(from, to))` will result in `from` being JSON-equal (see below) to `to`.
+Assuming `from` and `to` are `{...}` objects (according to `isObject()`),
+calling `apply(from, diff(from, to))` will result in `from` being deep-equal (see below) to `to`.
+In general, `from = apply(from, diff(from, to));` will always result in `from` being deep-equal to `to`.
 
-Assuming `from` and `to` are JSON-safe,
-the return value of this function will either be `undefined` or be JSON-safe.
-A return value of `undefined` indicates that `from` and `to` are already JSON-equal.
-Otherwise, this function often returns a `{...}` object.
-However, if `from` and `to` are not `{...}` objects,
-then curlydiff cannot perform any kind of meaningful diff,
-and `to` is returned regardless of its type.
-(Note that `apply()` will still return a meaningful value in this case.)
+If this function returns `undefined`, then `from` and `to` are already deep-equal.
+Otherwise, this function often returns a `{...}` object, which is a patch (see patch format below).
+If `from` and `to` are not both `{...}` objects (according to `isObject()`),
+then curlydiff does not perform any meaningful diff,
+and `to` is simply returned as-is to indicate that nothing is similar about the two objects.
+(Note that `apply()` will still behave meaningfully in this case.)
+
+Iteration over object keys is performed with a native `for`-`in` loop
+with no regard for `Object.hasOwnProperty()`.
 
 ### apply(object, patch)
 
 Applies `patch` to `object` in-place, and returns `object`.
 Assuming `patch` is a value that was returned from `diff(object, to)`,
-the returned value will be JSON-equal (see below) to the original `to`.
+the returned value will be deep-equal (see below) to the original `to`.
 If `patch` is `undefined`, then `object` is returned unaltered.
-Otherwise, assuming `object` and the original `to` are `{...}` objects,
-`object` will be modified in-place, and will then be JSON-equal to the original `to`.
+If `object` and the original `to` are both `{...}` objects (according to `isObject()`),
+then `object` will be modified in-place, and will become deep-equal to the original `to`.
+Otherwise, `patch` is returned as-is,
+which corresponds to the case where `object` and `to` were not both `{...}` objects.
 
-All of this assumes `object` and `to` are JSON-safe (see below).
+### isObject(value)
+
+Returns `true` iff curlydiff thinks that this object is a `{...}` object.
+The following must all be true:
+
+ * `value != null`
+ * `typeof value === "object"`
+ * `!Array.isArray(value)`
+ * `!(value instanceof Date)`
+
+Whenever this function returns `false`, the value is considered a "primitive value".
 
 ## Patch Format
 
-A patch that is `undefined`, indicates no change.
-Otherwise, patches will be JSON-safe (see below) assuming the inputs to this library are JSON-safe.
-See the Usage section above for examples.
+A patch is obtained by calling `diff(from, to)`.
 
-Patches are usually `{...}` objects, which represent the changes between the two objects.
+A patch that is `undefined`, indicates that `from` and `to` are already deep-equal (see below).
+Otherwise:
 
- * If the patch is not a `{...}` object, then the patch is equal to the `to` value.
- * If the patch is a `{...}` object, it means the `to` value is a `{...}` object, and:
-   * If a key is not mentioned in a patch, it indicates that the values match in the two objects.
+ * If the patch is a primitive value (according to `isObject()`), then the patch is equal to the `to` value.
+ * If the patch is a `{...}` object (according to `isObject()`), it means the `to` value is a `{...}` object, and:
+   * If a key is not present in the patch, it indicates that the values match in the two objects.
    * If a key maps to `null`, it means the value was deleted.
-   * Otherwise, the value is a patch between the properties of the objects.
+   * Otherwise, the value is a patch between the properties of the objects (and will not be `undefined`).
 
-## JSON Safety
+## Deep Equality
 
-This library is only designed to work with objects that are JSON-safe.
-A JSON-safe object is defined to be an object that could have been returned from `JSON.parse()`.
+Deep equality is defined for `a` and `b` recursively:
 
-Examples of JSON-safe objects:
+ * if `isObject(a)` and `isObject(b)`:
+   * `a` and `b` have the same set of keys, and for all keys:
+     * `a[key]` is deep-equal to `b[key]`
+ * if `a instanceof Date` and `b instanceof Date`:
+   * `a.getTime() === b.getTime()`
+ * otherwise `a === b`
 
- * `{a: 1, b: 2}`
- * `true`
- * `"a string"`
- * `null` (note that `null` has special meaning in this library)
- * `[1, 2]` (note that arrays are not well supported in this library)
-
-Examples of objects that are not JSON-safe:
-
- * `new Date()`
- * `new MyClass()`
- * `NaN`
- * `undefined`
- * `{a: undefined}`
- * `var x = {}; x.self = x;`
-
-Providing objects that are not JSON-safe to the functions in this library may cause undefined behavior.
-
-## JSON Equality
-
-JSON equality is defined to be when the JSON-stringification of two objects would be identical,
-assuming object keys are sorted.
-
-Examples of JSON-equal objects:
-
- * `{a:1, b:2}` and `{b:2, a:1}`
- * `[1]` and `[1]` (note that arrays are not well supported in this library)
- * `1` and `1` or any JSON-safe (see above) values `a` and `b` where `a === b`
+Note that arrays are not well supported by this definition.
